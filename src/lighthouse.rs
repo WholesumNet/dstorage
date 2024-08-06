@@ -34,12 +34,12 @@ pub struct FileUploadResponse {
 
 pub async fn upload_file(
     client: &reqwest::Client,
-    url_endpoint: String,
     api_key: String,
     local_filepath: String,
     dest_file_name: String
 ) -> Result<FileUploadResponse, Box<dyn Error>> {
     println!("Upload file request for `{}`", local_filepath);
+    const UPLOAD_URL = String::from("https://node.lighthouse.storage/api/v0/add");
     let file = TFile::open(local_filepath.clone()).await?;
     let file_len = file.metadata().await?.len();
 
@@ -70,7 +70,7 @@ pub async fn upload_file(
     let form = Form::new()
         .text("resourceName", "filename.filetype")
         .part("FileData", part);  
-    let resp = client.post(url_endpoint)
+    let resp = client.post(UPLOAD_URL)
         .bearer_auth(api_key)
         .multipart(form)
         .send()
@@ -100,10 +100,10 @@ pub struct FileInfoResponse {
 
 pub async fn get_file_info(
     client: &reqwest::Client,
-    url_endpoint: String,
     cid: String
 ) -> Result<FileInfoResponse, Box<dyn Error>> {
-    let response = client.get(url_endpoint)
+    const INFO_URL = String::from("https://api.lighthouse.storage/api/lighthouse/file_info");
+    let response = client.get(INFO_URL)
         .query(&[("cid", cid)])
         .send()
         .await?;
@@ -120,10 +120,12 @@ pub async fn get_file_info(
 
 pub async fn download_file(
     client: &reqwest::Client,
-    url_endpoint: String,
+    cid: &str,
     save_to: String,
 ) -> Result<(), Box<dyn Error>> {
-    let resp = client.get(url_endpoint.clone())
+    const DOWNLOAD_BASE_URL = String::from("https://gateway.lighthouse.storage/ipfs/");
+    let url = format!("{DOWNLOAD_BASE_URL}/{cid}");
+    let resp = client.get(url.clone())
         .send()
         .await?;
     if false == resp.status().is_success() {
@@ -137,7 +139,7 @@ pub async fn download_file(
     pb.set_style(ProgressStyle::default_bar()
         .template("{msg}\n{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")?
         .progress_chars("#>-"));
-    pb.set_message(format!("Downloading {}", url_endpoint));
+    pb.set_message(format!("Downloading {}", url));
 
     let mut stream = resp.bytes_stream();
     let mut file = File::create(save_to.clone())?;
@@ -149,7 +151,7 @@ pub async fn download_file(
         downloaded = progress;
         pb.set_position(progress);
     }
-    pb.finish_with_message(format!("Downloaded {} to {}", url_endpoint, save_to));
+    pb.finish_with_message(format!("Downloaded {} to {}", url, save_to));
     
     Ok(())
 }

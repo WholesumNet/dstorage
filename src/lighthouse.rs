@@ -1,6 +1,5 @@
 use std::{
     error::Error,
-    time::Duration,
     fs::File,
     io::Write,
     cmp::min,
@@ -13,7 +12,6 @@ use reqwest::{
 
 use tokio::fs::File as TFile;
 use tokio_util::io::ReaderStream;
-use async_stream::stream;
 use futures_util::StreamExt;
 
 use indicatif::{ProgressBar, ProgressStyle};
@@ -39,7 +37,7 @@ pub async fn upload_file(
     dest_file_name: String
 ) -> Result<FileUploadResponse, Box<dyn Error>> {
     println!("Upload file request for `{}`", local_filepath);
-    const UPLOAD_URL = String::from("https://node.lighthouse.storage/api/v0/add");
+    const UPLOAD_URL: &str = "https://node.lighthouse.storage/api/v0/add";
     let file = TFile::open(local_filepath.clone()).await?;
     let file_len = file.metadata().await?.len();
 
@@ -102,7 +100,7 @@ pub async fn get_file_info(
     client: &reqwest::Client,
     cid: String
 ) -> Result<FileInfoResponse, Box<dyn Error>> {
-    const INFO_URL = String::from("https://api.lighthouse.storage/api/lighthouse/file_info");
+    const INFO_URL: &str = "https://api.lighthouse.storage/api/lighthouse/file_info";
     let response = client.get(INFO_URL)
         .query(&[("cid", cid)])
         .send()
@@ -123,7 +121,7 @@ pub async fn download_file(
     cid: &str,
     save_to: String,
 ) -> Result<(), Box<dyn Error>> {
-    const DOWNLOAD_BASE_URL = String::from("https://gateway.lighthouse.storage/ipfs/");
+    const DOWNLOAD_BASE_URL: &str = "https://gateway.lighthouse.storage/ipfs/";
     let url = format!("{DOWNLOAD_BASE_URL}/{cid}");
     let resp = client.get(url.clone())
         .send()

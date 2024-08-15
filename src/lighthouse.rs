@@ -18,6 +18,13 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
+pub struct Config {
+    pub apiKey: String,
+}
+
+
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
 pub struct ResponseMessage {
     pub message: String,
 }

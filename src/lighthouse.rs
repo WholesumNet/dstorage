@@ -31,18 +31,26 @@ pub struct ResponseMessage {
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
-pub struct FileUploadResponse {
+struct FileUploadResponse {
     pub Name: String,
     pub Hash: String,
     pub Size: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UploadResult {
+    pub id: String,
+    pub name: String,
+    pub cid: String,
+    pub size: String,
+}
+
 pub async fn upload_file(
     client: &reqwest::Client,
-    api_key: String,
+    api_key: &str,
     local_filepath: String,
     dest_file_name: String
-) -> Result<FileUploadResponse, Box<dyn Error>> {
+) -> Result<UploadResult, Box<dyn Error>> {
     println!("Upload file request for `{}`", local_filepath);
     const UPLOAD_URL: &str = "https://node.lighthouse.storage/api/v0/add";
     let file = TFile::open(local_filepath.clone()).await?;
@@ -70,7 +78,7 @@ pub async fn upload_file(
     };
 
     let part = Part::stream(reqwest::Body::wrap_stream(async_stream))
-        .file_name(dest_file_name)
+        .file_name(dest_file_name.clone())
         .mime_str("application/octet-stream")?;
     let form = Form::new()
         .text("resourceName", "filename.filetype")
@@ -88,7 +96,13 @@ pub async fn upload_file(
     let upload_resp = resp
         .json::<FileUploadResponse>().await?;
     println!("File upload: {upload_resp:#?}");
-    Ok(upload_resp)
+    // dest_file_name is actually a helper to be used as job_id
+    Ok(UploadResult {
+        id: dest_file_name,
+        name: upload_resp.Name,
+        cid: upload_resp.Hash,
+        size: upload_resp.Size,
+    })
 }
 
 

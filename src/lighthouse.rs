@@ -1,5 +1,4 @@
 use std::{
-    error::Error,
     fs::File,
     io::Write,
     cmp::min,
@@ -15,6 +14,8 @@ use tokio_util::io::ReaderStream;
 use futures_util::StreamExt;
 
 use indicatif::{ProgressBar, ProgressStyle};
+
+use anyhow;
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
@@ -50,7 +51,7 @@ pub async fn upload_file(
     api_key: &str,
     local_filepath: String,
     dest_file_name: String
-) -> Result<UploadResult, Box<dyn Error>> {
+) -> anyhow::Result<UploadResult> {
     println!("Upload file request for `{}`", local_filepath);
     const UPLOAD_URL: &str = "https://node.lighthouse.storage/api/v0/add";
     let file = TFile::open(local_filepath.clone()).await?;
@@ -89,8 +90,8 @@ pub async fn upload_file(
         .send()
         .await?;
     if false == resp.status().is_success() {
-        return Err(format!("Upload file error: `{:?}`",
-            resp.json::<ResponseMessage>().await?.message).as_str().into()
+        anyhow::bail!("Upload file error: `{:?}`",
+            resp.json::<ResponseMessage>().await?.message
         );
     }
     let upload_resp = resp
@@ -120,15 +121,15 @@ pub struct FileInfoResponse {
 pub async fn get_file_info(
     client: &reqwest::Client,
     cid: String
-) -> Result<FileInfoResponse, Box<dyn Error>> {
+) -> anyhow::Result<FileInfoResponse> {
     const INFO_URL: &str = "https://api.lighthouse.storage/api/lighthouse/file_info";
     let response = client.get(INFO_URL)
         .query(&[("cid", cid)])
         .send()
         .await?;
     if false == response.status().is_success() {
-        return Err(format!("Get file info error: `{:?}`",
-            response.json::<ResponseMessage>().await?.message).as_str().into()
+        anyhow::bail!("Get file info error: `{:?}`",
+            response.json::<ResponseMessage>().await?.message
         );
     }
     let file_info_resp = response
@@ -141,15 +142,15 @@ pub async fn download_file(
     client: &reqwest::Client,
     cid: &str,
     save_to: String,
-) -> Result<(), Box<dyn Error>> {
+) -> anyhow::Result<()> {
     const DOWNLOAD_BASE_URL: &str = "https://gateway.lighthouse.storage/ipfs/";
     let url = format!("{DOWNLOAD_BASE_URL}/{cid}");
     let resp = client.get(url.clone())
         .send()
         .await?;
     if false == resp.status().is_success() {
-        return Err(format!("Download file info error: `{:?}`",
-            resp.json::<ResponseMessage>().await?.message).as_str().into()
+        anyhow::bail!("Download file info error: `{:?}`",
+            resp.json::<ResponseMessage>().await?.message
         );
     }
     let content_length = resp.content_length().unwrap_or_default();

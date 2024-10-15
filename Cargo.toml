@@ -18,3 +18,4 @@ futures-util = "0.3.28"
 indicatif = { version = "0.17.8", features = ["tokio"] }
 async-stream = "0.3.5"
 tokio-util = { version = "0.7.11", features = ["io"] }
+anyhow = "1.0.86"

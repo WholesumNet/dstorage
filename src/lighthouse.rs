@@ -82,7 +82,6 @@ pub async fn upload_file(
         .file_name(dest_file_name.clone())
         .mime_str("application/octet-stream")?;
     let form = Form::new()
-        .text("resourceName", "filename.filetype")
         .part("FileData", part);  
     let resp = client.post(UPLOAD_URL)
         .bearer_auth(api_key)
@@ -144,7 +143,7 @@ pub async fn download_file(
     save_to: String,
 ) -> anyhow::Result<()> {
     const DOWNLOAD_BASE_URL: &str = "https://gateway.lighthouse.storage/ipfs/";
-    let url = format!("{DOWNLOAD_BASE_URL}/{cid}");
+    let url = format!("{DOWNLOAD_BASE_URL}{cid}");
     let resp = client.get(url.clone())
         .send()
         .await?;
@@ -154,6 +153,7 @@ pub async fn download_file(
         );
     }
     let content_length = resp.content_length().unwrap_or_default();
+    println!("content length: `{content_length}`");
     // setup progress bar
     let pb = ProgressBar::new(content_length);
     pb.set_style(ProgressStyle::default_bar()
@@ -171,7 +171,6 @@ pub async fn download_file(
         downloaded = progress;
         pb.set_position(progress);
     }
-    pb.finish_with_message(format!("Downloaded {} to {}", url, save_to));
-    
+    pb.finish_with_message(format!("Downloaded `{url}` and saved it to `{save_to}`"));
     Ok(())
 }
